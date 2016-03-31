@@ -35,6 +35,7 @@ void loop() {
     
     if(rockBLOCK.sendSBDText(message.c_str()) == ISBD_SUCCESS) {
       Serial.println("Message sent");
+      recieved = false; // get ready for next message
       sCode = '0';
       for(int i = 0; i < 6; i++) {
         digitalWrite(LED_BUILTIN, (i % 2 == 1)? HIGH : LOW);
@@ -52,7 +53,6 @@ void loop() {
     }
 
     message.remove(0); // clears out message for next incoming wire
-    recieved = false; // get ready for next message
     
   } else { // i.e. waiting for message and or initial GPS fix
     /*if(rockBLOCK.sendSBDText("Waiting for GPS fix/Sending inital transmission") == ISBD_SUCCESS) {
