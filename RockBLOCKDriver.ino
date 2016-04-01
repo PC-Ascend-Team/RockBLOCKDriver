@@ -8,7 +8,7 @@ IridiumSBD rockBLOCK(sSerialRB, 10);
 
 String message;
 boolean recieved = false;
-int nRecieved, nTransmissions;
+int nRecieved = 0, nTransmissions = 0;
 char sCode; // '0' for all good, '1' for somthing went wrong (char for Wire.h simplicity)
 
 void setup() {
@@ -36,6 +36,7 @@ void loop() {
     if(rockBLOCK.sendSBDText(message.c_str()) == ISBD_SUCCESS) {
       Serial.println("Message sent");
       recieved = false; // get ready for next message
+      nTransmissions++;
       sCode = '0';
       for(int i = 0; i < 6; i++) {
         digitalWrite(LED_BUILTIN, (i % 2 == 1)? HIGH : LOW);
@@ -51,29 +52,12 @@ void loop() {
         delay(500);
       }
     }
-
-    message.remove(0); // clears out message for next incoming wire
     
   } else { // i.e. waiting for message and or initial GPS fix
-    /*if(rockBLOCK.sendSBDText("Waiting for GPS fix/Sending inital transmission") == ISBD_SUCCESS) {
-      Serial.println("Message sent");
-      sCode = '0';
-      for(int i = 0; i < 6; i++) {
-        digitalWrite(LED_BUILTIN, (i % 2 == 1)? HIGH : LOW);
-        delay(500);
-      }
-    } else {
-      Serial.println("Message error");
-      sCode = '1';
-      for(int i = 0; i < 3; i++) {
-        digitalWrite(LED_BUILTIN, (i % 2 == 1)? HIGH : LOW);
-        delay(2000);
-        digitalWrite(LED_BUILTIN, (i % 2 == 1)? LOW : HIGH);
-        delay(500);
-      }
-    }*/
+   
   }
-  
+  delay(1000);
+  digitalWrite(LED_BUILTIN, (digitalRead(LED_BUILTIN) == HIGH)? LOW : HIGH);
 }
 
 /*
@@ -83,14 +67,25 @@ void loop() {
  */
 void receiveEvent(int nBytes) {
   if(!recieved) { // i.e. rockBLOCK is ready for another message
+    message.remove(0); // clears out message for next incoming wire
+    message += (nTransmissions < 1)? "Hello World, I'm Ursa Major heres my status: " : "Ursa Major Update: ";
     while (1 < Wire.available()) {
       char c = Wire.read(); 
+      Serial.print(c);
       message += c; 
     }
     char eom = Wire.read();
+    Serial.print(" -");
+    Serial.print(eom);
+    Serial.print("- ");
     if(eom == '\0') { // '\0' is the "end of message"(eom) indicator sent by the master controller
       recieved = true; 
     }
+    nRecieved++;
+    Serial.print("RCVD WIRE ");
+    Serial.print(nRecieved);
+    Serial.print(": ");
+    Serial.println(message);
   }
 }
 
@@ -99,6 +94,8 @@ void receiveEvent(int nBytes) {
  */
 void requestEvent() {
   Wire.write(sCode);
+  Wire.write(nTransmissions);
+  Wire.write(nRecieved);
 }
 
 /*
